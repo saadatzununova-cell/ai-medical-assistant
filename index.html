@@ -1,0 +1,2166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Medical Assistant — Interactive Prototype</title>
+  <style>
+    /* Reset & Base Variables */
+    :root {
+      --bg-space: #0c121e;
+      --bg-sidebar: #090e17;
+      --bg-card: #111a28;
+      --bg-card-hover: #162235;
+      --bg-card-elevated: #152236;
+      --border-subtle: #1c2a3f;
+      --border-highlight: #283d5a;
+      
+      --accent-teal: #2dd4bf;
+      --accent-teal-hover: #14b8a6;
+      --accent-teal-bg: rgba(45, 212, 191, 0.12);
+      
+      --accent-gold: #f59e0b;
+      --accent-gold-bg: rgba(245, 158, 11, 0.1);
+      
+      --accent-coral: #fb7185;
+      --accent-coral-hover: #f43f5e;
+      
+      --status-offline: #f59e0b;
+      --status-online: #34d399;
+      
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-space);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Layout */
+    #app-container {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    aside.sidebar {
+      width: 250px;
+      min-width: 250px;
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 16px;
+      justify-content: space-between;
+    }
+
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 24px 8px;
+    }
+
+    .brand-logo-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #2dd4bf, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0c121e;
+      font-weight: 900;
+      font-size: 13px;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 9999px;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      gap: 12px;
+    }
+
+    .nav-item:hover {
+      color: #f1f5f9;
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-item.active {
+      background-color: var(--accent-teal-bg);
+      color: var(--accent-teal);
+      font-weight: 600;
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      opacity: 0.8;
+      stroke-width: 2;
+    }
+
+    .nav-item.active svg {
+      opacity: 1;
+      stroke: var(--accent-teal);
+    }
+
+    /* Emergency Button in Sidebar */
+    .emergency-btn {
+      background-color: var(--accent-coral);
+      color: #450a0a;
+      border: none;
+      border-radius: 9999px;
+      padding: 12px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px rgba(251, 113, 133, 0.25);
+    }
+
+    .emergency-btn:hover {
+      background-color: var(--accent-coral-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(251, 113, 133, 0.35);
+    }
+
+    .emergency-btn:active {
+      transform: translateY(0);
+    }
+
+    .emergency-kbd {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.85;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Main Content Area */
+    main.main-viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background-color: var(--bg-space);
+      position: relative;
+    }
+
+    /* Header Bar */
+    header.top-header {
+      padding: 16px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 13.5px;
+      color: var(--text-muted);
+      position: sticky;
+      top: 0;
+      background: rgba(12, 18, 30, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 20;
+    }
+
+    .crew-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .crew-info strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    .status-indicators {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 13px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.amber {
+      background-color: var(--status-offline);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+    }
+
+    .status-dot.green {
+      background-color: var(--status-online);
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+    }
+
+    .status-dot.pulse {
+      animation: statusPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.9); }
+    }
+
+    /* View Container */
+    .view-container {
+      padding: 28px 36px 40px 36px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 1380px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Control Bar: Mode Toggle for Demo */
+    .demo-bar {
+      position: fixed;
+      bottom: 16px;
+      right: 20px;
+      background: rgba(17, 26, 40, 0.9);
+      border: 1px solid var(--border-highlight);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      z-index: 90;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .demo-toggle-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .demo-toggle-btn:hover {
+      background: var(--accent-teal);
+      color: #0c121e;
+      border-color: var(--accent-teal);
+    }
+
+    /* =========================================================
+       PAGE 1: HEALTH OVERVIEW
+       ========================================================= */
+    .page-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.4px;
+    }
+
+    .btn-teal {
+      background-color: var(--accent-teal);
+      color: #042f2e;
+      border: none;
+      border-radius: 9999px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      box-shadow: 0 4px 12px rgba(45, 212, 191, 0.2);
+    }
+
+    .btn-teal:hover {
+      background-color: var(--accent-teal-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(45, 212, 191, 0.3);
+    }
+
+    .btn-teal-kbd {
+      font-size: 11px;
+      font-weight: 600;
+      opacity: 0.8;
+      background: rgba(0, 0, 0, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Deviations Banner */
+    .deviation-banner {
+      background-color: rgba(17, 26, 40, 0.6);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      border-radius: 14px;
+      padding: 18px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(4px);
+      position: relative;
+    }
+
+    .deviation-content {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .deviation-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--accent-gold);
+      text-transform: uppercase;
+    }
+
+    .deviation-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+
+    .btn-outline-gold {
+      background: transparent;
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      color: #fde68a;
+      border-radius: 9999px;
+      padding: 8px 20px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-outline-gold:hover {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: #f59e0b;
+      color: #fff;
+    }
+
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 18px 18px 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-highlight);
+      background-color: var(--bg-card-hover);
+      transform: translateY(-2px);
+    }
+
+    .metric-card.selected {
+      border-color: var(--accent-teal);
+      background-color: rgba(45, 212, 191, 0.05);
+      box-shadow: 0 0 16px rgba(45, 212, 191, 0.1);
+    }
+
+    .metric-title {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: -0.5px;
+      font-feature-settings: "tnum";
+    }
+
+    .metric-baseline {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .metric-status-badge {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+    }
+
+    .metric-status-badge.warn {
+      background: #f59e0b;
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+    }
+
+    /* Trends Chart Box */
+    .trends-panel {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 380px;
+    }
+
+    .trends-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .trends-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .trends-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-tab {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pill-tab:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .pill-tab.active {
+      background: var(--accent-teal-bg);
+      color: var(--accent-teal);
+      border-color: rgba(45, 212, 191, 0.3);
+      font-weight: 600;
+    }
+
+    .chart-container {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chart-placeholder-text {
+      color: var(--text-dim);
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    /* =========================================================
+       PAGE 2: SYMPTOM CHECK
+       ========================================================= */
+    .top-alert-banner {
+      background-color: rgba(17, 26, 40, 0.7);
+      border: 1px solid rgba(251, 113, 133, 0.25);
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .top-alert-banner strong {
+      color: var(--accent-coral);
+    }
+
+    .symptom-check-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .chat-section {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      gap: 16px;
+    }
+
+    .symptom-header-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .question-progress {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .chat-messages-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      max-height: 480px;
+      padding-right: 8px;
+    }
+
+    .message-bubble {
+      max-width: 82%;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14.5px;
+      line-height: 1.5;
+      animation: fadeInMsg 0.25s ease forwards;
+    }
+
+    @keyframes fadeInMsg {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message-bubble.assistant {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: #f1f5f9;
+      align-self: flex-start;
+      border-top-left-radius: 4px;
+    }
+
+    .message-bubble.user {
+      background-color: var(--bg-card-elevated);
+      border: 1px solid var(--border-highlight);
+      color: #94a3b8;
+      align-self: flex-end;
+      border-top-right-radius: 4px;
+      font-style: italic;
+    }
+
+    .quick-options-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .quick-option-btn {
+      background: transparent;
+      border: 1px solid rgba(45, 212, 191, 0.4);
+      color: #5eead4;
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-option-btn:hover {
+      background: var(--accent-teal-bg);
+      border-color: var(--accent-teal);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .quick-option-btn .num-key {
+      background: rgba(45, 212, 191, 0.15);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    /* Input Bar */
+    .chat-input-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 8px 10px 8px 20px;
+      transition: border-color 0.2s;
+    }
+
+    .chat-input-bar:focus-within {
+      border-color: var(--accent-teal);
+    }
+
+    .chat-input-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #f8fafc;
+      font-size: 14.5px;
+      font-family: inherit;
+    }
+
+    .chat-input-bar input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .btn-dictate {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+      border-radius: 9999px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-dictate:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+    }
+
+    .btn-dictate.recording {
+      background: rgba(251, 113, 133, 0.2);
+      border-color: var(--accent-coral);
+      color: var(--accent-coral);
+      animation: pulseRecord 1s infinite alternate;
+    }
+
+    @keyframes pulseRecord {
+      from { transform: scale(1); }
+      to { transform: scale(1.04); }
+    }
+
+    .btn-send {
+      background-color: var(--accent-teal);
+      color: #042f2e;
+      border: none;
+      border-radius: 9999px;
+      padding: 8px 18px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-send:hover {
+      background-color: var(--accent-teal-hover);
+    }
+
+    .btn-send .kbd {
+      font-size: 10px;
+      opacity: 0.75;
+    }
+
+    /* Right Side Data Panel */
+    .data-analysis-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      height: fit-content;
+    }
+
+    .data-card-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .data-metric-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .data-metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13.5px;
+    }
+
+    .data-metric-row .metric-label {
+      color: var(--text-muted);
+    }
+
+    .data-metric-row .metric-val {
+      color: #f1f5f9;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    /* =========================================================
+       PAGE 3: ASSESSMENT RESULT
+       ========================================================= */
+    .assessment-header-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+
+    .assessment-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Severity Level Bar */
+    .severity-section {
+      margin-bottom: 24px;
+    }
+
+    .severity-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .severity-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .severity-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .severity-card:hover {
+      border-color: var(--border-highlight);
+      background: var(--bg-card-hover);
+    }
+
+    .severity-card .sev-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sev-dot.monitor { background: #38bdf8; }
+    .sev-dot.treat { background: #34d399; }
+    .sev-dot.contact { background: #f59e0b; }
+    .sev-dot.evacuate { background: #f43f5e; }
+
+    /* Highlighted card matching screenshot 3 */
+    .severity-card.active-contact {
+      border: 1.5px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.08);
+      color: #fde68a;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    }
+
+    /* Assessment Content Layout */
+    .assessment-grid {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 22px;
+      margin-bottom: 24px;
+    }
+
+    .recommendations-box {
+      background: var(--bg-card);
+      border: 1px solid rgba(45, 212, 191, 0.4);
+      border-radius: 16px;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .box-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--accent-teal);
+      text-transform: uppercase;
+    }
+
+    .recommendations-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .recommendation-item {
+      display: flex;
+      gap: 12px;
+      font-size: 15px;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+
+    .recommendation-num {
+      color: var(--accent-teal);
+      font-weight: 700;
+    }
+
+    .assessment-right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .causes-box, .findings-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .causes-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cause-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .cause-name {
+      color: #f1f5f9;
+      font-weight: 500;
+    }
+
+    .cause-prob {
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .cause-prob.more-likely {
+      color: #f59e0b;
+      font-weight: 600;
+    }
+
+    .findings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .finding-item {
+      font-size: 13.5px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .finding-item::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent-teal);
+    }
+
+    /* Bottom Action Bar for Assessment */
+    .assessment-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-highlight);
+      color: #cbd5e1;
+      border-radius: 9999px;
+      padding: 10px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #64748b;
+      color: #fff;
+    }
+
+    /* Modal / Alert Dialog (Emergency Ctrl+E) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 560px;
+      background: #111a28;
+      border: 2px solid var(--accent-coral);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 0 40px rgba(251, 113, 133, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: modalSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlide {
+      from { transform: scale(0.95) translateY(10px); }
+      to { transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .modal-icon-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(251, 113, 133, 0.15);
+      color: var(--accent-coral);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      border: 1px solid var(--accent-coral);
+    }
+
+    .modal-title-group h3 {
+      font-size: 20px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .modal-title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .modal-body {
+      font-size: 14.5px;
+      color: #e2e8f0;
+      line-height: 1.6;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .modal-checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .modal-checklist li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: #111a28;
+      border: 1px solid var(--accent-teal);
+      border-radius: 12px;
+      padding: 12px 20px;
+      color: #f1f5f9;
+      font-size: 13.5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideInToast {
+      from { transform: translateX(50px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Custom SVG styling for Charts */
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-container">
+    
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <div>
+        <!-- Logo / App Title -->
+        <div class="brand-title">
+          <div class="brand-logo-icon">▲</div>
+          <span>AI Medical Assistant</span>
+        </div>
+
+        <!-- Navigation items -->
+        <ul class="nav-list">
+          <li>
+            <a class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+                <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+                <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+                <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+              </svg>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" id="nav-symptom-check" onclick="switchView('symptom-check')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              <span>Symptom check</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" id="nav-assessment" onclick="switchView('assessment')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+              </svg>
+              <span>Assessment result</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" id="nav-health-log" onclick="switchView('health-log')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                <path d="M14 2v6h6"></path>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <line x1="10" y1="9" x2="8" y2="9"></line>
+              </svg>
+              <span>Health log</span>
+            </a>
+          </li>
+          <li>
+            <a class="nav-item" id="nav-profile" onclick="switchView('profile')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Profile</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Emergency Ctrl+E button -->
+      <button class="emergency-btn" onclick="openEmergencyModal()">
+        <span>Emergency</span>
+        <span class="emergency-kbd">Ctrl+E</span>
+      </button>
+    </aside>
+
+    <!-- MAIN VIEWPORT -->
+    <main class="main-viewport">
+      
+      <!-- TOP STATUS BAR -->
+      <header class="top-header">
+        <div class="crew-info">
+          <span id="header-crew-name">Commander Elena Vance</span>
+          <span>·</span>
+          <span id="header-mission-day">Mission day 142</span>
+        </div>
+        <div class="status-indicators">
+          <div class="status-badge">
+            <span class="status-dot amber pulse"></span>
+            <span>Offline mode</span>
+          </div>
+          <div class="status-badge">
+            <span class="status-dot green"></span>
+            <span id="header-ground-status">Ground link: Standby (4.2m latency)</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==========================================
+           PAGE 1: HEALTH OVERVIEW (DASHBOARD)
+           ========================================== -->
+      <div id="view-dashboard" class="view-container">
+        
+        <!-- Header row -->
+        <div class="page-header-row">
+          <h1 class="page-title">Health overview</h1>
+          <button class="btn-teal" onclick="switchView('symptom-check')">
+            <span>Check symptoms</span>
+            <span class="btn-teal-kbd">Ctrl+K</span>
+          </button>
+        </div>
+
+        <!-- Deviations Banner -->
+        <div class="deviation-banner">
+          <div class="deviation-content">
+            <span class="deviation-label">DEVIATIONS FROM PERSONAL BASELINE</span>
+            <span class="deviation-text" id="deviation-banner-text">2 deviations detected: Heart rate, Sleep</span>
+          </div>
+          <button class="btn-outline-gold" onclick="reviewDeviations()">Review deviations</button>
+        </div>
+
+        <!-- Vitals Metric Cards -->
+        <div class="metrics-grid">
+          <!-- Heart rate -->
+          <div class="metric-card selected" id="card-hr" onclick="selectMetric('hr')">
+            <div class="metric-title">
+              <span>Heart rate</span>
+              <span class="metric-status-badge warn"></span>
+            </div>
+            <div class="metric-value" id="val-hr">84 bpm</div>
+            <div class="metric-baseline" id="base-hr">Baseline: 70 bpm</div>
+          </div>
+
+          <!-- Blood pressure -->
+          <div class="metric-card" id="card-bp" onclick="selectMetric('bp')">
+            <div class="metric-title">
+              <span>Blood pressure</span>
+              <span class="metric-status-badge"></span>
+            </div>
+            <div class="metric-value" id="val-bp">132 / 88</div>
+            <div class="metric-baseline" id="base-bp">Baseline: 120 / 80</div>
+          </div>
+
+          <!-- Temperature -->
+          <div class="metric-card" id="card-temp" onclick="selectMetric('temp')">
+            <div class="metric-title">
+              <span>Temperature</span>
+              <span class="metric-status-badge"></span>
+            </div>
+            <div class="metric-value" id="val-temp">37.1 °C</div>
+            <div class="metric-baseline" id="base-temp">Baseline: 36.6 °C</div>
+          </div>
+
+          <!-- SpO2 -->
+          <div class="metric-card" id="card-spo2" onclick="selectMetric('spo2')">
+            <div class="metric-title">
+              <span>SpO2</span>
+              <span class="metric-status-badge"></span>
+            </div>
+            <div class="metric-value" id="val-spo2">98 %</div>
+            <div class="metric-baseline" id="base-spo2">Baseline: 99 %</div>
+          </div>
+
+          <!-- Sleep -->
+          <div class="metric-card" id="card-sleep" onclick="selectMetric('sleep')">
+            <div class="metric-title">
+              <span>Sleep</span>
+              <span class="metric-status-badge warn"></span>
+            </div>
+            <div class="metric-value" id="val-sleep">5.2 h</div>
+            <div class="metric-baseline" id="base-sleep">Baseline: 8.0 h</div>
+          </div>
+        </div>
+
+        <!-- Trends Panel with Interactive Canvas / SVG Chart -->
+        <div class="trends-panel">
+          <div class="trends-header">
+            <span class="trends-title" id="trends-chart-title">TRENDS VS. BASELINE — HEART RATE</span>
+            <div class="trends-controls">
+              <button class="pill-tab" onclick="setChartRange('24h', this)">24h</button>
+              <button class="pill-tab active" onclick="setChartRange('3d', this)">3d</button>
+              <button class="pill-tab" onclick="setChartRange('7d', this)">7d</button>
+            </div>
+          </div>
+          
+          <div class="chart-container" id="chart-container">
+            <svg class="chart-svg" id="trend-chart-svg" viewBox="0 0 900 240" preserveAspectRatio="none">
+              <!-- Grid lines -->
+              <line x1="40" y1="40" x2="880" y2="40" stroke="#1c2a3f" stroke-dasharray="4" />
+              <line x1="40" y1="100" x2="880" y2="100" stroke="#1c2a3f" stroke-dasharray="4" />
+              <line x1="40" y1="160" x2="880" y2="160" stroke="#1c2a3f" stroke-dasharray="4" />
+              <line x1="40" y1="210" x2="880" y2="210" stroke="#1c2a3f" />
+
+              <!-- Baseline corridor range (shaded) -->
+              <rect x="40" y="85" width="840" height="40" fill="rgba(45, 212, 191, 0.07)" rx="4" />
+              <text x="870" y="108" fill="#2dd4bf" font-size="11" text-anchor="end" opacity="0.7">Baseline Normal Zone (65 - 75 bpm)</text>
+
+              <!-- Line Trend Path -->
+              <path id="trend-line-path" d="M 50 115 Q 120 120, 180 110 T 310 100 T 450 90 T 590 75 T 720 60 T 860 50" fill="none" stroke="#2dd4bf" stroke-width="3" stroke-linecap="round" />
+              
+              <!-- Gradient fill below line -->
+              <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#2dd4bf" stop-opacity="0.0"/>
+              </linearGradient>
+              <path id="trend-area-path" d="M 50 115 Q 120 120, 180 110 T 310 100 T 450 90 T 590 75 T 720 60 T 860 50 L 860 210 L 50 210 Z" fill="url(#chart-gradient)" />
+
+              <!-- Data markers -->
+              <circle cx="50" cy="115" r="4.5" fill="#111a28" stroke="#2dd4bf" stroke-width="2.5" />
+              <circle cx="180" cy="110" r="4.5" fill="#111a28" stroke="#2dd4bf" stroke-width="2.5" />
+              <circle cx="310" cy="100" r="4.5" fill="#111a28" stroke="#2dd4bf" stroke-width="2.5" />
+              <circle cx="450" cy="90" r="4.5" fill="#111a28" stroke="#2dd4bf" stroke-width="2.5" />
+              <circle cx="590" cy="75" r="4.5" fill="#111a28" stroke="#2dd4bf" stroke-width="2.5" />
+              <circle cx="720" cy="60" r="4.5" fill="#111a28" stroke="#f59e0b" stroke-width="2.5" />
+              <circle cx="860" cy="50" r="5" fill="#f59e0b" stroke="#fff" stroke-width="2" />
+              <text x="860" y="36" fill="#f59e0b" font-size="12" font-weight="700" text-anchor="middle">84 bpm (+14)</text>
+
+              <!-- Time axis labels -->
+              <text x="50" y="230" fill="#64748b" font-size="11">Sol 139</text>
+              <text x="310" y="230" fill="#64748b" font-size="11">Sol 140</text>
+              <text x="590" y="230" fill="#64748b" font-size="11">Sol 141</text>
+              <text x="860" y="230" fill="#2dd4bf" font-size="11" text-anchor="end" font-weight="600">Today (Sol 142)</text>
+            </svg>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           PAGE 2: SYMPTOM CHECK
+           ========================================== -->
+      <div id="view-symptom-check" class="view-container hidden">
+        
+        <!-- Emergency Warning Banner at top -->
+        <div class="top-alert-banner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>Chest pain, trouble breathing, loss of consciousness, severe bleeding: stop and press <strong>Emergency (Ctrl+E)</strong>.</span>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="symptom-check-layout">
+          
+          <!-- Left Chat Area -->
+          <div class="chat-section">
+            
+            <div class="symptom-header-block">
+              <h1 class="page-title">Symptom check</h1>
+              <div class="question-progress" id="question-counter">Question 2 of about 5</div>
+            </div>
+
+            <!-- Dialogue stream -->
+            <div class="chat-messages-container" id="chat-messages">
+              <!-- AI Bubble 1 -->
+              <div class="message-bubble assistant">
+                Describe what you feel: what, where, and since when.
+              </div>
+
+              <!-- User Bubble 1 -->
+              <div class="message-bubble user" id="user-msg-1">
+                Dull throbbing pain in frontal lobe for ~4 hours, slightly dizzy on head turn.
+              </div>
+
+              <!-- AI Bubble 2 -->
+              <div class="message-bubble assistant" id="ai-msg-2">
+                Is the pain constant or does it come and go?
+              </div>
+
+              <!-- Quick choice pills (1, 2, 3) -->
+              <div class="quick-options-row" id="quick-options-container">
+                <button class="quick-option-btn" onclick="selectAnswer('Constant')">
+                  <span class="num-key">1</span>
+                  <span>Constant</span>
+                </button>
+                <button class="quick-option-btn" onclick="selectAnswer('Comes and goes')">
+                  <span class="num-key">2</span>
+                  <span>Comes and goes</span>
+                </button>
+                <button class="quick-option-btn" onclick="selectAnswer('Not sure')">
+                  <span class="num-key">3</span>
+                  <span>Not sure</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Bottom Input Bar -->
+            <div class="chat-input-bar">
+              <input type="text" id="symptom-text-input" placeholder="Type or dictate your answer" onkeydown="handleInputKey(event)">
+              <button class="btn-dictate" id="btn-dictate" onclick="toggleDictation()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 01-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+                <span id="dictate-text">Dictate</span>
+              </button>
+              <button class="btn-send" onclick="sendCustomMessage()">
+                <span>Send</span>
+                <span class="kbd">Enter</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Right Sidebar: Data Used in Analysis -->
+          <div class="data-analysis-card">
+            <span class="data-card-title">DATA USED IN THIS ANALYSIS</span>
+            <div class="data-metric-list">
+              <div class="data-metric-row">
+                <span class="metric-label">Heart rate:</span>
+                <span class="metric-val" id="data-hr">84 bpm</span>
+              </div>
+              <div class="data-metric-row">
+                <span class="metric-label">Blood pressure:</span>
+                <span class="metric-val" id="data-bp">132 / 88 mmHg</span>
+              </div>
+              <div class="data-metric-row">
+                <span class="metric-label">Temperature:</span>
+                <span class="metric-val" id="data-temp">37.1 °C</span>
+              </div>
+              <div class="data-metric-row">
+                <span class="metric-label">SpO2:</span>
+                <span class="metric-val" id="data-spo2">98 %</span>
+              </div>
+              <div class="data-metric-row">
+                <span class="metric-label">Sleep, last 3 days:</span>
+                <span class="metric-val" id="data-sleep">5.2 h avg</span>
+              </div>
+              <div class="data-metric-row">
+                <span class="metric-label">Medications:</span>
+                <span class="metric-val" id="data-meds">Acetaminophen (12h ago)</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.05);">
+              <button class="btn-secondary" style="width: 100%; text-align: center;" onclick="switchView('assessment')">
+                View Assessment Result →
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           PAGE 3: ASSESSMENT RESULT
+           ========================================== -->
+      <div id="view-assessment" class="view-container hidden">
+        
+        <!-- Header row -->
+        <div class="assessment-header-row">
+          <h1 class="page-title">Assessment result</h1>
+          <span class="assessment-subtitle">Decision support only. Not a diagnosis.</span>
+        </div>
+
+        <!-- Severity Indicators Bar -->
+        <div class="severity-section">
+          <div class="severity-title">SEVERITY</div>
+          <div class="severity-grid">
+            <div class="severity-card" onclick="selectSeverity('monitor', this)">
+              <span class="sev-dot monitor"></span>
+              <span>Monitor</span>
+            </div>
+            <div class="severity-card" onclick="selectSeverity('treat', this)">
+              <span class="sev-dot treat"></span>
+              <span>Treat onboard</span>
+            </div>
+            <!-- Highlighted by default as in screenshot 3 -->
+            <div class="severity-card active-contact" onclick="selectSeverity('contact', this)">
+              <span class="sev-dot contact"></span>
+              <span>Contact ground medical support</span>
+            </div>
+            <div class="severity-card" onclick="selectSeverity('evacuate', this)">
+              <span class="sev-dot evacuate"></span>
+              <span>Emergency: evacuation</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main assessment content columns -->
+        <div class="assessment-grid">
+          
+          <!-- Left Large Card: Recommendations -->
+          <div class="recommendations-box">
+            <span class="box-title">RECOMMENDATIONS</span>
+            <ol class="recommendations-list">
+              <li class="recommendation-item">
+                <span class="recommendation-num">1.</span>
+                <span id="rec-1">Administer 400 mg oral Ibuprofen with 500 mL electrolyte hydration pouch immediately.</span>
+              </li>
+              <li class="recommendation-item">
+                <span class="recommendation-num">2.</span>
+                <span id="rec-2">Rest in crew sleep quarters with lowered lighting and verify cabin CO2 partial pressure is below 2.8 mmHg.</span>
+              </li>
+              <li class="recommendation-item">
+                <span class="recommendation-num">3.</span>
+                <span id="rec-3">Schedule automated vital re-check in 2 hours; transmit biometric telemetry bundle to flight surgeon.</span>
+              </li>
+            </ol>
+          </div>
+
+          <!-- Right Column: Possible Causes & Data Findings -->
+          <div class="assessment-right-col">
+            
+            <!-- Possible Causes Box -->
+            <div class="causes-box">
+              <span class="box-title" style="color: var(--text-muted);">POSSIBLE CAUSES</span>
+              <div class="causes-list">
+                <div class="cause-row">
+                  <span class="cause-name" id="cause-1">Space Motion Sickness / Cephalic Fluid Shift</span>
+                  <span class="cause-prob more-likely" id="cause-1-prob">more likely</span>
+                </div>
+                <div class="cause-row">
+                  <span class="cause-name" id="cause-2">Mild Hypercapnia (Elevated CO2)</span>
+                  <span class="cause-prob" id="cause-2-prob">less likely</span>
+                </div>
+                <div class="cause-row">
+                  <span class="cause-name" id="cause-3">Circadian Fatigue & Dehydration</span>
+                  <span class="cause-prob" id="cause-3-prob">rare</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Data Findings Box -->
+            <div class="findings-box">
+              <span class="box-title" style="color: var(--text-muted);">DATA FINDINGS</span>
+              <div class="findings-list">
+                <div class="finding-item" id="finding-1">Heart rate is 84 bpm vs. baseline 70 bpm (+14 bpm)</div>
+                <div class="finding-item" id="finding-2">Sleep is 5.2 h vs. baseline 8.0 h (-2.8 h deficit)</div>
+                <div class="finding-item" id="finding-3">Blood pressure elevated at 132/88 mmHg vs 120/80</div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="assessment-actions">
+          <button class="btn-teal" onclick="sendSummaryToGround()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+            <span id="btn-transmit-text">Send summary to ground</span>
+          </button>
+          
+          <button class="btn-secondary" onclick="saveToHealthLog()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+            <span>Save to health log</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ==========================================
+           PAGE 4: HEALTH LOG (EXTENDED VIEW)
+           ========================================== -->
+      <div id="view-health-log" class="view-container hidden">
+        <div class="page-header-row">
+          <h1 class="page-title">Health log</h1>
+          <button class="btn-secondary" onclick="exportLog()">Export medical archive (.json)</button>
+        </div>
+
+        <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13.5px;">
+            <thead>
+              <tr style="background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.6px;">
+                <th style="padding: 16px 20px;">Timestamp</th>
+                <th style="padding: 16px 20px;">Event / Symptom</th>
+                <th style="padding: 16px 20px;">Vitals Recorded</th>
+                <th style="padding: 16px 20px;">Outcome & Recommendation</th>
+                <th style="padding: 16px 20px;">Ground Sync</th>
+              </tr>
+            </thead>
+            <tbody id="health-log-tbody">
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 16px 20px; font-family: var(--font-mono); color: #cbd5e1;">Sol 142 · 14:15 UTC</td>
+                <td style="padding: 16px 20px; font-weight: 600; color: #f59e0b;">Frontal Headache / Dizziness</td>
+                <td style="padding: 16px 20px; font-family: var(--font-mono);">HR: 84 | BP: 132/88 | Temp: 37.1</td>
+                <td style="padding: 16px 20px;">Contact ground medical support · Hydration + Ibuprofen</td>
+                <td style="padding: 16px 20px;"><span style="color: #34d399;">● Queued</span></td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 16px 20px; font-family: var(--font-mono); color: #cbd5e1;">Sol 141 · 08:00 UTC</td>
+                <td style="padding: 16px 20px; font-weight: 600; color: #34d399;">Routine Morning Telemetry Check</td>
+                <td style="padding: 16px 20px; font-family: var(--font-mono);">HR: 71 | BP: 121/79 | Temp: 36.6</td>
+                <td style="padding: 16px 20px;">All parameters within normal personal baseline</td>
+                <td style="padding: 16px 20px;"><span style="color: #34d399;">● Synced</span></td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 16px 20px; font-family: var(--font-mono); color: #cbd5e1;">Sol 138 · 21:30 UTC</td>
+                <td style="padding: 16px 20px; font-weight: 600; color: #38bdf8;">EVA Post-spacewalk Recovery</td>
+                <td style="padding: 16px 20px; font-family: var(--font-mono);">HR: 89 | BP: 128/84 | SpO2: 97</td>
+                <td style="padding: 16px 20px;">Mild musculoskeletal exertion · 8h sleep cycle prescribed</td>
+                <td style="padding: 16px 20px;"><span style="color: #34d399;">● Synced</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           PAGE 5: CREW PROFILE (EXTENDED VIEW)
+           ========================================== -->
+      <div id="view-profile" class="view-container hidden">
+        <div class="page-header-row">
+          <h1 class="page-title">Astronaut Medical Profile</h1>
+          <button class="btn-teal" onclick="showToast('Profile sync verified with MCC-Houston')">Update Baseline</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px;">
+          <!-- Left Bio Card -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid var(--accent-teal); margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--accent-teal); font-weight: 700;">
+              EV
+            </div>
+            <h3 style="font-size: 18px; color: #fff; margin-bottom: 4px;">Elena Vance, Ph.D.</h3>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Commander / Flight Specialist · Expedition 71</p>
+            
+            <div style="text-align: left; display: flex; flex-direction: column; gap: 10px; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;">
+              <div><strong style="color: var(--text-muted);">Age:</strong> <span style="float: right; color: #f1f5f9;">38 yrs</span></div>
+              <div><strong style="color: var(--text-muted);">Blood Type:</strong> <span style="float: right; color: #f1f5f9;">A Rh+</span></div>
+              <div><strong style="color: var(--text-muted);">Allergies:</strong> <span style="float: right; color: #fb7185;">Penicillin (moderate)</span></div>
+              <div><strong style="color: var(--text-muted);">Cumulative Rad:</strong> <span style="float: right; color: #f59e0b;">84.2 mSv</span></div>
+            </div>
+          </div>
+
+          <!-- Right Baseline Settings Card -->
+          <div style="background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+            <span class="box-title">PERSONAL BIOMETRIC BASELINES</span>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div style="background: rgba(0,0,0,0.25); padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; color: var(--text-muted);">Resting Heart Rate</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">68 - 74 bpm</div>
+                <div style="font-size: 11px; color: #64748b;">Calibrated Sol 10</div>
+              </div>
+              <div style="background: rgba(0,0,0,0.25); padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; color: var(--text-muted);">Normal Blood Pressure</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">118/76 - 124/82</div>
+                <div style="font-size: 11px; color: #64748b;">Pre-launch flight physical</div>
+              </div>
+              <div style="background: rgba(0,0,0,0.25); padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; color: var(--text-muted);">Core Temperature</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">36.5 - 36.8 °C</div>
+                <div style="font-size: 11px; color: #64748b;">Tympanic sensor baseline</div>
+              </div>
+              <div style="background: rgba(0,0,0,0.25); padding: 14px; border-radius: 10px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 12px; color: var(--text-muted);">Target Sleep Cycle</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 4px;">7.5 - 8.0 h / Sol</div>
+                <div style="font-size: 11px; color: #64748b;">Circadian synchronization protocol</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- EMERGENCY MODAL (Ctrl + E) -->
+  <div class="modal-overlay" id="emergency-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-badge">!</div>
+        <div class="modal-title-group">
+          <h3>EMERGENCY PROTOCOL ACTIVATED</h3>
+          <p>Priority 1 medical condition alert triggered</p>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <strong>Immediate Onboard Actions:</strong>
+        <ul class="modal-checklist">
+          <li>✓ High-priority telemetry burst automatically dispatched to Mission Control Center.</li>
+          <li>✓ Automated external defibrillator (AED) and Emergency Medical Kit #1 unlatched.</li>
+          <li>✓ Secondary crew member notified via station intercom.</li>
+          <li>✓ Ensure oxygen mask deployment if experiencing acute hypoxia or smoke inhalation.</li>
+        </ul>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeEmergencyModal()">Cancel Alert (Esc)</button>
+        <button class="emergency-btn" style="padding: 10px 20px;" onclick="confirmEvacuation()">Confirm Medical Priority 1</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- DEMO CONTROL BAR (Allows toggling between raw mockup placeholder mode & live mission mode) -->
+  <div class="demo-bar">
+    <span>View Mode:</span>
+    <button class="demo-toggle-btn" id="btn-toggle-mode" onclick="toggleDataMode()">Toggle Bracket Placeholders [—]</button>
+    <span>Shortcuts: <kbd style="color:#2dd4bf">Ctrl+E</kbd> | <kbd style="color:#2dd4bf">Ctrl+K</kbd> | <kbd style="color:#2dd4bf">1, 2, 3</kbd></span>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // State
+    let currentView = 'dashboard';
+    let isPlaceholderMode = false;
+    let isRecording = false;
+    let selectedMetricKey = 'hr';
+
+    // Mockup Datasets
+    const simulatedData = {
+      crewName: "Commander Elena Vance",
+      missionDay: "Mission day 142",
+      groundStatus: "Ground link: Standby (4.2m latency)",
+      deviationText: "2 deviations detected: Heart rate, Sleep",
+      hr: "84 bpm",
+      hrBase: "Baseline: 70 bpm",
+      bp: "132 / 88",
+      bpBase: "Baseline: 120 / 80",
+      temp: "37.1 °C",
+      tempBase: "Baseline: 36.6 °C",
+      spo2: "98 %",
+      spo2Base: "Baseline: 99 %",
+      sleep: "5.2 h",
+      sleepBase: "Baseline: 8.0 h",
+      rec1: "Administer 400 mg oral Ibuprofen with 500 mL electrolyte hydration pouch immediately.",
+      rec2: "Rest in crew sleep quarters with lowered lighting and verify cabin CO2 partial pressure is below 2.8 mmHg.",
+      rec3: "Schedule automated vital re-check in 2 hours; transmit biometric telemetry bundle to flight surgeon.",
+      cause1: "Space Motion Sickness / Cephalic Fluid Shift",
+      cause2: "Mild Hypercapnia (Elevated CO2)",
+      finding1: "Heart rate is 84 bpm vs. baseline 70 bpm (+14 bpm)",
+      finding2: "Sleep is 5.2 h vs. baseline 8.0 h (-2.8 h deficit)",
+      userDesc: "Dull throbbing pain in frontal lobe for ~4 hours, slightly dizzy on head turn.",
+      meds: "Acetaminophen (12h ago)"
+    };
+
+    const placeholderData = {
+      crewName: "[Crew member name]",
+      missionDay: "Mission day [—]",
+      groundStatus: "Ground link: [status]",
+      deviationText: "[N] deviations detected: [metric], [metric]",
+      hr: "[— bpm]",
+      hrBase: "Baseline: [—]",
+      bp: "[— / —]",
+      bpBase: "Baseline: [—]",
+      temp: "[— °C]",
+      tempBase: "Baseline: [—]",
+      spo2: "[— %]",
+      spo2Base: "Baseline: [—]",
+      sleep: "[— h]",
+      sleepBase: "Baseline: [—]",
+      rec1: "[Recommendation 1]",
+      rec2: "[Recommendation 2]",
+      rec3: "[Recommendation 3]",
+      cause1: "[Cause 1]",
+      cause2: "[Cause 2]",
+      finding1: "[Metric] is [—] vs. baseline [—]",
+      finding2: "[Metric] is [—] vs. baseline [—]",
+      userDesc: "[Astronaut's description]",
+      meds: "[—]"
+    };
+
+    // Navigation Switcher
+    function switchView(viewId) {
+      currentView = viewId;
+      const views = ['dashboard', 'symptom-check', 'assessment', 'health-log', 'profile'];
+      
+      views.forEach(id => {
+        const el = document.getElementById(`view-${id}`);
+        const navEl = document.getElementById(`nav-${id}`);
+        if (el) el.classList.toggle('hidden', id !== viewId);
+        if (navEl) navEl.classList.toggle('active', id !== viewId);
+      });
+      
+      window.scrollTo(0, 0);
+    }
+
+    // Toggle between Raw Wireframe Placeholders and Populated Live Data
+    function toggleDataMode() {
+      isPlaceholderMode = !isPlaceholderMode;
+      const d = isPlaceholderMode ? placeholderData : simulatedData;
+      
+      document.getElementById('header-crew-name').innerText = d.crewName;
+      document.getElementById('header-mission-day').innerText = d.missionDay;
+      document.getElementById('header-ground-status').innerText = d.groundStatus;
+      document.getElementById('deviation-banner-text').innerText = d.deviationText;
+      
+      // Dashboard Cards
+      document.getElementById('val-hr').innerText = d.hr;
+      document.getElementById('base-hr').innerText = d.hrBase;
+      document.getElementById('val-bp').innerText = d.bp;
+      document.getElementById('base-bp').innerText = d.bpBase;
+      document.getElementById('val-temp').innerText = d.temp;
+      document.getElementById('base-temp').innerText = d.tempBase;
+      document.getElementById('val-spo2').innerText = d.spo2;
+      document.getElementById('base-spo2').innerText = d.spo2Base;
+      document.getElementById('val-sleep').innerText = d.sleep;
+      document.getElementById('base-sleep').innerText = d.sleepBase;
+      
+      // Symptom Check Panel
+      document.getElementById('data-hr').innerText = d.hr;
+      document.getElementById('data-bp').innerText = d.bp;
+      document.getElementById('data-temp').innerText = d.temp;
+      document.getElementById('data-spo2').innerText = d.spo2;
+      document.getElementById('data-sleep').innerText = d.sleep;
+      document.getElementById('data-meds').innerText = d.meds;
+      document.getElementById('user-msg-1').innerText = d.userDesc;
+
+      // Assessment Result
+      document.getElementById('rec-1').innerText = d.rec1;
+      document.getElementById('rec-2').innerText = d.rec2;
+      document.getElementById('rec-3').innerText = d.rec3;
+      document.getElementById('cause-1').innerText = d.cause1;
+      document.getElementById('cause-2').innerText = d.cause2;
+      document.getElementById('finding-1').innerText = d.finding1;
+      document.getElementById('finding-2').innerText = d.finding2;
+
+      const btn = document.getElementById('btn-toggle-mode');
+      btn.innerText = isPlaceholderMode ? "Switch to Live Simulated Data" : "Switch to Wireframe [—] Mode";
+
+      showToast(isPlaceholderMode ? "Switched to Wireframe Mockup [—] view" : "Switched to Live Mission Telemetry view");
+    }
+
+    // Select Metric to plot on Trends Chart
+    function selectMetric(metricKey) {
+      selectedMetricKey = metricKey;
+      const cards = ['hr', 'bp', 'temp', 'spo2', 'sleep'];
+      cards.forEach(k => {
+        const card = document.getElementById(`card-${k}`);
+        if (card) card.classList.toggle('selected', k === metricKey);
+      });
+
+      const titles = {
+        hr: "TRENDS VS. BASELINE — HEART RATE (bpm)",
+        bp: "TRENDS VS. BASELINE — BLOOD PRESSURE (mmHg)",
+        temp: "TRENDS VS. BASELINE — CORE TEMPERATURE (°C)",
+        spo2: "TRENDS VS. BASELINE — BLOOD OXYGEN SATURATION (%)",
+        sleep: "TRENDS VS. BASELINE — SLEEP DURATION (Hours)"
+      };
+
+      document.getElementById('trends-chart-title').innerText = titles[metricKey] || "TRENDS VS. BASELINE";
+      renderTrendChart(metricKey);
+    }
+
+    function setChartRange(range, btn) {
+      document.querySelectorAll('.trends-controls .pill-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTrendChart(selectedMetricKey, range);
+      showToast(`Timescale adjusted to: ${range}`);
+    }
+
+    function renderTrendChart(metric, range = '3d') {
+      const line = document.getElementById('trend-line-path');
+      const area = document.getElementById('trend-area-path');
+      if (!line || !area) return;
+
+      const paths = {
+        hr: {
+          d: "M 50 115 Q 120 120, 180 110 T 310 100 T 450 90 T 590 75 T 720 60 T 860 50",
+          area: "M 50 115 Q 120 120, 180 110 T 310 100 T 450 90 T 590 75 T 720 60 T 860 50 L 860 210 L 50 210 Z"
+        },
+        bp: {
+          d: "M 50 120 Q 150 110, 260 125 T 460 100 T 660 85 T 860 65",
+          area: "M 50 120 Q 150 110, 260 125 T 460 100 T 660 85 T 860 65 L 860 210 L 50 210 Z"
+        },
+        temp: {
+          d: "M 50 100 Q 200 105, 350 98 T 600 102 T 860 80",
+          area: "M 50 100 Q 200 105, 350 98 T 600 102 T 860 80 L 860 210 L 50 210 Z"
+        },
+        spo2: {
+          d: "M 50 90 Q 200 88, 400 92 T 650 90 T 860 95",
+          area: "M 50 90 Q 200 88, 400 92 T 650 90 T 860 95 L 860 210 L 50 210 Z"
+        },
+        sleep: {
+          d: "M 50 80 Q 200 70, 350 110 T 600 130 T 860 150",
+          area: "M 50 80 Q 200 70, 350 110 T 600 130 T 860 150 L 860 210 L 50 210 Z"
+        }
+      };
+
+      const selected = paths[metric] || paths.hr;
+      line.setAttribute('d', selected.d);
+      area.setAttribute('d', selected.area);
+    }
+
+    // Review Deviations Alert Action
+    function reviewDeviations() {
+      showToast("Displaying 2 active parameter deviations from standard circadian curve.");
+      selectMetric('hr');
+    }
+
+    // Symptom Check Question Interaction
+    let currentQuestionStep = 2;
+
+    function selectAnswer(answerText) {
+      appendUserMessage(answerText);
+      document.getElementById('quick-options-container').style.display = 'none';
+
+      // Simulate next question
+      setTimeout(() => {
+        currentQuestionStep++;
+        if (currentQuestionStep <= 4) {
+          document.getElementById('question-counter').innerText = `Question ${currentQuestionStep} of about 5`;
+          if (currentQuestionStep === 3) {
+            appendAssistantMessage("Do you have any blurred vision, nausea, or sensitivity to station illumination?");
+            renderQuickOptions(["Severe nausea", "Mild light sensitivity", "None of these"]);
+          } else if (currentQuestionStep === 4) {
+            appendAssistantMessage("When did you last consume water or an electrolyte pouch, and did you exercise today?");
+            renderQuickOptions(["Hydrated & exercised", "Skipped hydration", "Unsure"]);
+          }
+        } else {
+          document.getElementById('question-counter').innerText = `Analysis complete`;
+          appendAssistantMessage("Thank you. Diagnostics compiled with current biometrics. You can now view the assessment.");
+          renderAssessmentButton();
+        }
+      }, 700);
+    }
+
+    function appendUserMessage(text) {
+      const container = document.getElementById('chat-messages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble user';
+      bubble.style.fontStyle = 'normal';
+      bubble.innerText = text;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function appendAssistantMessage(text) {
+      const container = document.getElementById('chat-messages');
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble assistant';
+      bubble.innerText = text;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function renderQuickOptions(options) {
+      const container = document.getElementById('chat-messages');
+      const row = document.createElement('div');
+      row.className = 'quick-options-row';
+      row.id = 'quick-options-container';
+
+      options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-option-btn';
+        btn.innerHTML = `<span class="num-key">${idx + 1}</span><span>${opt}</span>`;
+        btn.onclick = () => selectAnswer(opt);
+        row.appendChild(btn);
+      });
+
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function renderAssessmentButton() {
+      const container = document.getElementById('chat-messages');
+      const div = document.createElement('div');
+      div.style.marginTop = '10px';
+      div.innerHTML = `
+        <button class="btn-teal" style="width: fit-content;" onclick="switchView('assessment')">
+          <span>Go to Assessment Result →</span>
+        </button>
+      `;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function handleInputKey(e) {
+      if (e.key === 'Enter') {
+        sendCustomMessage();
+      }
+    }
+
+    function sendCustomMessage() {
+      const input = document.getElementById('symptom-text-input');
+      const val = input.value.trim();
+      if (!val) return;
+      input.value = '';
+      selectAnswer(val);
+    }
+
+    function toggleDictation() {
+      const btn = document.getElementById('btn-dictate');
+      const txt = document.getElementById('dictate-text');
+      isRecording = !isRecording;
+      
+      if (isRecording) {
+        btn.classList.add('recording');
+        txt.innerText = 'Listening...';
+        showToast("Audio microphone stream open for speech-to-text...");
+        setTimeout(() => {
+          if (isRecording) {
+            document.getElementById('symptom-text-input').value = "Pain intensity feels like 6/10, worsening when tilting forward";
+            toggleDictation();
+          }
+        }, 2200);
+      } else {
+        btn.classList.remove('recording');
+        txt.innerText = 'Dictate';
+      }
+    }
+
+    // Assessment Actions
+    function selectSeverity(level, element) {
+      document.querySelectorAll('.severity-card').forEach(c => {
+        c.classList.remove('active-contact');
+        c.style.borderColor = '';
+        c.style.background = '';
+        c.style.boxShadow = '';
+      });
+
+      element.classList.add('active-contact');
+      showToast(`Severity classification updated: ${level.toUpperCase()}`);
+    }
+
+    function sendSummaryToGround() {
+      const btn = document.getElementById('btn-transmit-text');
+      btn.innerText = "Transmitting Packet...";
+      showToast("Encrypted medical telemetry telemetry queued for MCC transmission.");
+      
+      setTimeout(() => {
+        btn.innerText = "Transmitted to Ground ✓";
+        showToast("Medical packet transmitted. Awaiting flight surgeon acknowledgment.");
+      }, 1500);
+    }
+
+    function saveToHealthLog() {
+      showToast("Assessment result saved to permanent Crew Health Log.");
+      setTimeout(() => switchView('health-log'), 600);
+    }
+
+    function exportLog() {
+      showToast("Exported medical JSON packet to local storage.");
+    }
+
+    // Emergency Modal Logic (Ctrl + E)
+    function openEmergencyModal() {
+      const modal = document.getElementById('emergency-modal');
+      modal.classList.add('active');
+    }
+
+    function closeEmergencyModal() {
+      const modal = document.getElementById('emergency-modal');
+      modal.classList.remove('active');
+    }
+
+    function confirmEvacuation() {
+      alert("EMERGENCY LEVEL 1 DISPATCHED:\n- Crew alerted via high-tone buzzer.\n- Houston MCC Flight Surgeon priority link engaged.\n- Return vehicle pre-flight sequence initialized.");
+      closeEmergencyModal();
+    }
+
+    // Toast Helper
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Keyboard Shortcuts (Ctrl+E, Ctrl+K, 1, 2, 3, Esc)
+    window.addEventListener('keydown', (e) => {
+      // Ctrl+E: Emergency
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) {
+        e.preventDefault();
+        openEmergencyModal();
+      }
+      
+      // Ctrl+K: Symptom Check
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        switchView('symptom-check');
+      }
+
+      // Esc: Close Modal
+      if (e.key === 'Escape') {
+        closeEmergencyModal();
+      }
+
+      // Quick numbers 1, 2, 3 during symptom check if not typing in text box
+      if (currentView === 'symptom-check' && document.activeElement.tagName !== 'INPUT') {
+        if (e.key === '1') selectAnswer('Constant');
+        if (e.key === '2') selectAnswer('Comes and goes');
+        if (e.key === '3') selectAnswer('Not sure');
+      }
+    });
+  </script>
+</body>
+</html>
